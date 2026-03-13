@@ -1,4 +1,4 @@
-@sport_plugin_api_test_HostAddress = http://localhost:5062
+@sport_plugin_api_test_HostAddress = http://localhost:5141
 
 GET {{sport_plugin_api_test_HostAddress}}/weatherforecast/
 Accept: application/json
