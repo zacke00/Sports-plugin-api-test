@@ -4,9 +4,10 @@ namespace Sport.App.Handball;
 
 [ApiController]
 [Route("api/[controller]")]
-public class HandballController(IHandballService svc) : ControllerBase
+public class HandballController : ControllerBase
 {
-    private readonly IHandballService _svc = svc;
+    private readonly IHandballService _svc;
+    public HandballController(IHandballService svc) => _svc = svc;
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -15,12 +16,20 @@ public class HandballController(IHandballService svc) : ControllerBase
         return Ok(items);
     }
 
+    [HttpGet("{id:long}")]
+    public async Task<IActionResult> Get(long id)
+    {
+        var item = await _svc.GetByIdAsync((ulong)id);
+        if (item is null) return NotFound();
+        return Ok(item);
+    }
+
     [HttpPost("sync")]
-    public async Task<IActionResult> Sync(string? date)
+    public async Task<IActionResult> Sync(DateOnly date)
     {
         try
         {
-            await _svc.SyncGamesByDateAsync(date ?? string.Empty);
+            await _svc.SyncGamesByDateAsync(date);
             return Accepted();
         }
         catch (InvalidOperationException ioe)

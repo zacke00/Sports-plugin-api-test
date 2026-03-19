@@ -12,13 +12,13 @@ public class VenuesClient
         _httpClient = httpClient;
     }
 
-    public async Task<venue?> GetVenueByIdAsync(int id)
+    public async Task<Venue?> GetVenueByIdAsync(int id)
     {
         var response = await _httpClient.GetAsync($"/api/venues/{id}");
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<venue>(json);
+            return JsonSerializer.Deserialize<Venue>(json);
         }
         return null;
     }

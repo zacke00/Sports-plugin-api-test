@@ -33,49 +33,49 @@ public class VenuesController : ControllerBase
         var normalizedName = name.Trim();
 
         var existing = await _db.venues
-            .FirstOrDefaultAsync(v => v.name == normalizedName);
+            .FirstOrDefaultAsync(v => v.Name == normalizedName);
 
         if (existing != null)
         {
-            if (!string.IsNullOrWhiteSpace(name)) existing.name = name.Trim();
-            existing.location = location ?? existing.location;
-            existing.address = address ?? existing.address;
-            existing.phone = phone ?? existing.phone;
-            existing.updated_at = DateTime.UtcNow;
+            if (!string.IsNullOrWhiteSpace(name)) existing.Name = name.Trim();
+            existing.Location = location ?? existing.Location;
+            existing.Address = address ?? existing.Address;
+            existing.Phone = phone ?? existing.Phone;
+            existing.Updated_at = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
             return Ok(existing);
         }
         else
         {
-            var v = new venue
+            var v = new Venue
             {
-                name = normalizedName,
-                location = location,
-                address = address,
-                phone = phone,
-                created_at = DateTime.UtcNow,
-                updated_at = DateTime.UtcNow
+                Name = normalizedName,
+                Location = location,
+                Address = address,
+                Phone = phone,
+                Created_at = DateTime.UtcNow,
+                Updated_at = DateTime.UtcNow
             };
 
             await _db.venues.AddAsync(v);
             await _db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(Get), new { id = v.id }, v);
+            return CreatedAtAction(nameof(Get), new { id = v.Id }, v);
         }
     }
 
     [HttpPut("{id:long}")]
-    public async Task<IActionResult> Update(ulong id, venue input)
+    public async Task<IActionResult> Update(ulong id, Venue input)
     {
         var v = await _db.venues.FindAsync(id);
         if (v == null) return NotFound();
 
-        if (!string.IsNullOrWhiteSpace(input?.name)) v.name = input.name;
-        v.location = input?.location ?? v.location;
-        v.address = input?.address ?? v.address;
-        v.phone = input?.phone ?? v.phone;
-        v.updated_at = DateTime.UtcNow;
+        if (!string.IsNullOrWhiteSpace(input?.Name)) v.Name = input.Name;
+        v.Location = input?.Location ?? v.Location;
+        v.Address = input?.Address ?? v.Address;
+        v.Phone = input?.Phone ?? v.Phone;
+        v.Updated_at = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
         return Ok(v);

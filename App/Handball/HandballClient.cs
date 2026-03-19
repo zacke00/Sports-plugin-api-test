@@ -23,14 +23,14 @@ public class HandballClient
 
     }
 
-    public async Task<HandballGamesResponse?> GetGamesByDateAsync(string date)
+    public async Task<HandballGamesResponse?> GetGamesByDateAsync(DateOnly date)
     {
         if (string.IsNullOrWhiteSpace(_options.Value.ApiKey))
         {
             throw new InvalidOperationException("ApiSports API key is not configured. Set 'Handball:ApiKey' in environment, user-secrets or .env.");
         }
 
-        var url = $"games?date={date}";
+        var url = $"games?date={date:yyyy-MM-dd}";
 
         HttpRequestMessage requestMessage = new(HttpMethod.Get, url);
         requestMessage.Headers.Add("Accept", "application/json");

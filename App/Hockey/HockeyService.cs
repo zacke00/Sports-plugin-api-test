@@ -1,35 +1,54 @@
 using Microsoft.EntityFrameworkCore;
 using Sport.App.Data;
 using Sport.App.Models.Scaffolded;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace Sport.App.Hockey;
 
 public interface IHockeyService
 {
-    Task<IEnumerable<fixture>> GetAllAsync();
-    Task<fixture?> GetByIdAsync(ulong id);
+    Task<IEnumerable<Fixture>> GetAllAsync(CancellationToken token = default);
+    Task<Fixture?> GetByIdAsync(ulong id, CancellationToken token = default);
     Task SyncFixturesRangeAsync(int league, int season, DateOnly? from, DateOnly? to);
 }
 
-public class HockeyService : IHockeyService
+public class HockeyService(HybridCache cache, SportsVenuesScaffoldContext db, HockeyClient client) : IHockeyService
 {
-    private readonly SportsVenuesScaffoldContext _db;
-    private readonly HockeyClient _client;
+    private readonly HybridCache _cache = cache;
+    private readonly SportsVenuesScaffoldContext _db = db;
+    private readonly HockeyClient _client = client;
 
-    public HockeyService(SportsVenuesScaffoldContext db, HockeyClient client)
+    public async Task<IEnumerable<Fixture>> GetAllAsync(CancellationToken token = default)
     {
-        _db = db;
-        _client = client;
+        return await _cache.GetOrCreateAsync(
+            "hockey-fixtures-all",
+            async cancel => await _db.fixtures
+                .Where(f => f.Sport_type == "hockey")
+                .AsNoTracking()
+                .ToListAsync(cancel),
+            new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(5),
+                LocalCacheExpiration = TimeSpan.FromMinutes(1)
+            },
+            cancellationToken: token
+        );
     }
 
-    public async Task<IEnumerable<fixture>> GetAllAsync()
+    public async Task<Fixture?> GetByIdAsync(ulong id, CancellationToken token = default)
     {
-        return await _db.fixtures.Where(f => f.sport_type == "hockey").AsNoTracking().ToListAsync();
-    }
-
-    public async Task<fixture?> GetByIdAsync(ulong id)
-    {
-        return await _db.fixtures.AsNoTracking().FirstOrDefaultAsync(f => f.id == id && f.sport_type == "hockey");
+        return await _cache.GetOrCreateAsync(
+            $"hockey-fixture-{id}",
+            async cancel => await _db.fixtures
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.id == id && f.Sport_type == "hockey", cancel),
+            new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(5),
+                LocalCacheExpiration = TimeSpan.FromMinutes(1)
+            },
+            cancellationToken: token
+        );
     }
 
     public async Task SyncFixturesRangeAsync(int league, int season, DateOnly? from, DateOnly? to)
@@ -40,7 +59,7 @@ public class HockeyService : IHockeyService
             var parsedFrom = from.Value.ToDateTime(TimeOnly.MinValue);
             var parsedTo = to.Value.ToDateTime(TimeOnly.MinValue);
 
-            var toDelete = await _db.fixtures.Where(f => f.starts_at >= parsedFrom && f.starts_at <= parsedTo && f.sport_type == "hockey").ToListAsync();
+            var toDelete = await _db.fixtures.Where(f => f.Starts_at >= parsedFrom && f.Starts_at <= parsedTo && f.Sport_type == "hockey").ToListAsync();
             if (toDelete.Any())
             {
                 _db.fixtures.RemoveRange(toDelete);
@@ -56,23 +75,23 @@ public class HockeyService : IHockeyService
         {
             var providerFixtureId = g.Id.ToString();
 
-            var model = new fixture
+            var model = new Fixture
             {
-                provider = "api-sports-hockey",
-                provider_fixture_id = providerFixtureId,
-                sport_type = "hockey",
-                league_name = g.League?.Name,
-                starts_at = DateTimeOffset.Parse(g.Date!).UtcDateTime,
-                home_team_name = g.Teams?.Home?.Name,
-                away_team_name = g.Teams?.Away?.Name,
-                created_at = DateTime.UtcNow,
-                updated_at = DateTime.UtcNow,
+                Provider = "api-sports-hockey",
+                Provider_fixture_id = providerFixtureId,
+                Sport_type = "hockey",
+                League_name = g.League?.Name,
+                Starts_at = DateTimeOffset.Parse(g.Date!).UtcDateTime,
+                Home_team_name = g.Teams?.Home?.Name,
+                Away_team_name = g.Teams?.Away?.Name,
+                Created_at = DateTime.UtcNow,
+                Updated_at = DateTime.UtcNow,
             };
 
             // Upsert: if exists, update; else add
             var exists = await _db.fixtures.FirstOrDefaultAsync(f =>
-                f.provider == "api-sports-hockey" &&
-                f.provider_fixture_id == providerFixtureId);
+                f.Provider == "api-sports-hockey" &&
+                f.Provider_fixture_id == providerFixtureId);
             if (exists != null)
             {
                 _db.Entry(exists).CurrentValues.SetValues(model);
@@ -84,5 +103,8 @@ public class HockeyService : IHockeyService
         }
 
         await _db.SaveChangesAsync();
+
+        // Invalidate cache so next read fetches fresh data
+        await _cache.RemoveAsync("hockey-fixtures-all");
     }
 }

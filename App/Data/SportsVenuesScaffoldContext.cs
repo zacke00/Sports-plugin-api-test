@@ -12,11 +12,11 @@ public partial class SportsVenuesScaffoldContext : DbContext
     {
     }
 
-    public virtual DbSet<fixture> fixtures { get; set; }
+    public virtual DbSet<Fixture> fixtures { get; set; }
 
-    public virtual DbSet<venue> venues { get; set; }
+    public virtual DbSet<Venue> venues { get; set; }
 
-    public virtual DbSet<venue_fixture> venue_fixtures { get; set; }
+    public virtual DbSet<Venue_fixture> venue_fixtures { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,69 +24,69 @@ public partial class SportsVenuesScaffoldContext : DbContext
             .UseCollation("utf8mb4_0900_ai_ci")
             .HasCharSet("utf8mb4");
 
-        modelBuilder.Entity<fixture>(entity =>
+        modelBuilder.Entity<Fixture>(entity =>
         {
             entity.HasKey(e => e.id).HasName("PRIMARY");
 
-            entity.HasIndex(e => new { e.sport_type, e.league_name }, "idx_fixtures_sport_league");
+            entity.HasIndex(e => new { e.Sport_type, e.League_name }, "idx_fixtures_sport_league");
 
-            entity.HasIndex(e => e.starts_at, "idx_fixtures_starts_at");
+            entity.HasIndex(e => e.Starts_at, "idx_fixtures_starts_at");
 
-            entity.HasIndex(e => new { e.provider, e.provider_fixture_id }, "ux_fixture_external").IsUnique();
+            entity.HasIndex(e => new { e.Provider, e.Provider_fixture_id }, "ux_fixture_external").IsUnique();
 
-            entity.Property(e => e.away_team_name).HasMaxLength(255);
-            entity.Property(e => e.created_at)
+            entity.Property(e => e.Away_team_name).HasMaxLength(255);
+            entity.Property(e => e.Created_at)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp");
-            entity.Property(e => e.deleted_at).HasColumnType("datetime");
-            entity.Property(e => e.home_team_name).HasMaxLength(255);
-            entity.Property(e => e.race_name).HasMaxLength(255);
-            entity.Property(e => e.league_name).HasMaxLength(128);
-            entity.Property(e => e.provider).HasMaxLength(64);
-            entity.Property(e => e.provider_fixture_id).HasMaxLength(128);
-            entity.Property(e => e.sport_type).HasMaxLength(64);
-            entity.Property(e => e.starts_at).HasColumnType("datetime");
-            entity.Property(e => e.updated_at)
+            entity.Property(e => e.Deleted_at).HasColumnType("datetime");
+            entity.Property(e => e.Home_team_name).HasMaxLength(255);
+            entity.Property(e => e.Race_name).HasMaxLength(255);
+            entity.Property(e => e.League_name).HasMaxLength(128);
+            entity.Property(e => e.Provider).HasMaxLength(64);
+            entity.Property(e => e.Provider_fixture_id).HasMaxLength(128);
+            entity.Property(e => e.Sport_type).HasMaxLength(64);
+            entity.Property(e => e.Starts_at).HasColumnType("datetime");
+            entity.Property(e => e.Updated_at)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp");
         });
 
-        modelBuilder.Entity<venue>(entity =>
+        modelBuilder.Entity<Venue>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("PRIMARY");
+            entity.HasKey(e => e.Id).HasName("PRIMARY");
 
-            entity.Property(e => e.address).HasMaxLength(255);
-            entity.Property(e => e.created_at)
+            entity.Property(e => e.Address).HasMaxLength(255);
+            entity.Property(e => e.Created_at)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp");
-            entity.Property(e => e.location).HasMaxLength(255);
-            entity.Property(e => e.name).HasMaxLength(255);
-            entity.Property(e => e.phone).HasMaxLength(50);
-            entity.Property(e => e.updated_at)
+            entity.Property(e => e.Location).HasMaxLength(255);
+            entity.Property(e => e.Name).HasMaxLength(255);
+            entity.Property(e => e.Phone).HasMaxLength(50);
+            entity.Property(e => e.Updated_at)
                 .ValueGeneratedOnAddOrUpdate()
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp");
         });
 
-        modelBuilder.Entity<venue_fixture>(entity =>
+        modelBuilder.Entity<Venue_fixture>(entity =>
         {
-            entity.HasKey(e => new { e.venue_id, e.fixture_id })
+            entity.HasKey(e => new { e.Venue_id, e.Fixture_id })
                 .HasName("PRIMARY")
                 .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
 
-            entity.HasIndex(e => e.fixture_id, "idx_vf_fixture_id");
+            entity.HasIndex(e => e.Fixture_id, "idx_vf_fixture_id");
 
-            entity.Property(e => e.created_at)
+            entity.Property(e => e.Created_at)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp");
 
-            entity.HasOne(d => d.fixture).WithMany(p => p.venue_fixtures)
-                .HasForeignKey(d => d.fixture_id)
+            entity.HasOne(d => d.Fixture).WithMany(p => p.Venue_fixtures)
+                .HasForeignKey(d => d.Fixture_id)
                 .HasConstraintName("fk_vf_fixture");
 
-            entity.HasOne(d => d.venue).WithMany(p => p.venue_fixtures)
-                .HasForeignKey(d => d.venue_id)
+            entity.HasOne(d => d.Venue).WithMany(p => p.Venue_fixtures)
+                .HasForeignKey(d => d.Venue_id)
                 .HasConstraintName("fk_vf_venue");
         });
 

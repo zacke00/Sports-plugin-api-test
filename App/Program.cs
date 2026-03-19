@@ -4,6 +4,7 @@ using Sport.App.Football;
 using Sport.App.FormulaOne;
 using Sport.App.Handball;
 using Sport.App.Venues;
+using Sport.App.VenueFixture;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,8 @@ builder.Services.AddFormulaOne();
 builder.Services.AddHandball();
 builder.Services.AddVenues();
 builder.Services.AddHockey();
+builder.Services.AddVenueFixture();
+builder.Services.AddHybridCache();
 
 var app = builder.Build();
 

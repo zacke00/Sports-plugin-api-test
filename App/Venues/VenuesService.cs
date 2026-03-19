@@ -6,7 +6,7 @@ namespace Sport.App.Venues;
 
 public interface IVenuesService
 {
-    Task<IEnumerable<venue>> GetAllAsync();
+    Task<IEnumerable<Venue>> GetAllAsync();
     Task CreateOrUpdateVenueAsync(string name, string location, string address, string phone);
 }
 
@@ -21,33 +21,33 @@ public class VenuesService : IVenuesService
         _client = client;
     }
 
-    public async Task<IEnumerable<venue>> GetAllAsync()
+    public async Task<IEnumerable<Venue>> GetAllAsync()
     {
         return await _db.venues.ToListAsync();
     }
 
     public async Task CreateOrUpdateVenueAsync(string name, string location, string address, string phone)
     {
-        var existingVenue = await _db.venues.FirstOrDefaultAsync(v => v.name == name);
+        var existingVenue = await _db.venues.FirstOrDefaultAsync(v => v.Name == name);
 
         if (existingVenue != null)
         {
-            existingVenue.name = name;
-            existingVenue.location = location;
-            existingVenue.address = address;
-            existingVenue.phone = phone;
-            existingVenue.updated_at = DateTime.UtcNow;
+            existingVenue.Name = name;
+            existingVenue.Location = location;
+            existingVenue.Address = address;
+            existingVenue.Phone = phone;
+            existingVenue.Updated_at = DateTime.UtcNow;
             _db.venues.Update(existingVenue);
         }
         else
         {
-            var newVenue = new venue
+            var newVenue = new Venue
             {
-                name = name,
-                location = location,
-                address = address,
-                phone = phone,
-                created_at = DateTime.UtcNow
+                Name = name,
+                Location = location,
+                Address = address,
+                Phone = phone,
+                Created_at = DateTime.UtcNow
             };
 
             await _db.venues.AddAsync(newVenue);
