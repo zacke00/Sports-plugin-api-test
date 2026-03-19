@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Sport.App.Data;
-using Sport.App.Apis;
 using Sport.App.Models.Scaffolded;
 
 namespace Sport.App.Football;
@@ -9,7 +8,7 @@ public interface IFootballService
 {
     Task<IEnumerable<fixture>> GetAllAsync();
     Task<fixture?> GetByIdAsync(ulong id);
-    Task SyncFixturesRangeAsync(int league, string season, string from, string to);
+    Task SyncFixturesRangeAsync(int league, int season, DateOnly? from, DateOnly? to);
 }
 
 public class FootballService : IFootballService
@@ -33,65 +32,53 @@ public class FootballService : IFootballService
         return await _db.fixtures.AsNoTracking().FirstOrDefaultAsync(f => f.id == id && f.sport_type == "football");
     }
 
-    public async Task SyncFixturesRangeAsync(int league, string season, string? from, string? to)
+    public async Task SyncFixturesRangeAsync(int league, int season, DateOnly? from, DateOnly? to)
     {
-        // Default to today's date if missing
-        if (string.IsNullOrWhiteSpace(from) && string.IsNullOrWhiteSpace(to))
+        // Delete existing fixtures in the date range only if a range is provided.
+        if (from is not null && to is not null )
         {
-            var today = DateTime.UtcNow.Date;
-            from = today.ToString("yyyy-MM-dd");
-            to = today.ToString("yyyy-MM-dd");
-        }
-        else if (string.IsNullOrWhiteSpace(from) && !string.IsNullOrWhiteSpace(to))
-        {
-            // if only 'to' provided, set from = to
-            from = to;
-        }
-        else if (!string.IsNullOrWhiteSpace(from) && string.IsNullOrWhiteSpace(to))
-        {
-            // if only from provided, set to = from
-            to = from;
-        }
+            var parsedFrom = from.Value.ToDateTime(TimeOnly.MinValue);
+            var parsedTo = to.Value.ToDateTime(TimeOnly.MinValue);
 
-        // Delete existing fixtures in the date range (hard-delete for now).
-        var parsedFrom = DateTime.Parse(from!);
-        var parsedTo = DateTime.Parse(to!).AddDays(1).AddTicks(-1);
-
-        var toDelete = await _db.fixtures.Where(f => f.starts_at >= parsedFrom && f.starts_at <= parsedTo && f.sport_type == "football").ToListAsync();
-        if (toDelete.Any())
-        {
-            _db.fixtures.RemoveRange(toDelete);
-            await _db.SaveChangesAsync();
+            var toDelete = await _db.fixtures.Where(f => f.starts_at >= parsedFrom && f.starts_at <= parsedTo && f.sport_type == "football").ToListAsync();
+            if (toDelete.Any())
+            {
+                _db.fixtures.RemoveRange(toDelete);
+                await _db.SaveChangesAsync();
+            }
         }
 
         // Fetch from external API
         var external = await _client.GetFixturesByRangeAsync(league, season, from, to);
-        if (external?.response == null) return;
+        if (external?.Response == null) return;
 
-        foreach (var item in external.response)
+        foreach (var item in external.Response)
         {
-            var fx = item.fixture;
-            var teams = item.teams;
-            var goals = item.goals;
+            var fx = item.Fixture;
+            var teams = item.Teams;
+            var goals = item.Goals;
+
+            var providerFixtureId = fx.Id.ToString();
 
             var model = new fixture
             {
-                id = (ulong)fx.id,
                 provider = "api-sports",
-                provider_fixture_id = fx.id.ToString(),
+                provider_fixture_id = providerFixtureId,
                 sport_type = "football",
-                league_name = item.league?.name,
-                starts_at = DateTime.Parse(fx.date).ToUniversalTime(),
-                home_team_name = teams?.home?.name,
-                away_team_name = teams?.away?.name,
-                home_score = goals?.home,
-                away_score = goals?.away,
+                league_name = item.League?.Name,
+                starts_at = DateTime.Parse(fx.Date!).ToUniversalTime(),
+                home_team_name = teams?.Home?.Name,
+                away_team_name = teams?.Away?.Name,
+                home_score = goals?.Home,
+                away_score = goals?.Away,
                 created_at = DateTime.UtcNow,
                 updated_at = DateTime.UtcNow
             };
 
             // Upsert: if exists, update; else add
-            var exists = await _db.fixtures.FindAsync(model.id);
+            var exists = await _db.fixtures.FirstOrDefaultAsync(f =>
+                f.provider == "api-sports" &&
+                f.provider_fixture_id == providerFixtureId);
             if (exists != null)
             {
                 _db.Entry(exists).CurrentValues.SetValues(model);

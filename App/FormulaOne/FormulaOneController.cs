@@ -1,35 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace Sport.App.Football;
+namespace Sport.App.FormulaOne;
 
 [ApiController]
 [Route("api/[controller]")]
-public class FootballController : ControllerBase
+public class FormulaOneController : ControllerBase
 {
-    private readonly IFootballService _svc;
-    public FootballController(IFootballService svc) => _svc = svc;
+    private readonly IFormulaOneService _svc;
+    public FormulaOneController(IFormulaOneService svc) => _svc = svc;
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var items = await _svc.GetAllAsync();
-        return Ok(items);
-    }
-
-    [HttpGet("{id:long}")]
-    public async Task<IActionResult> Get(long id)
-    {
-        var item = await _svc.GetByIdAsync((ulong)id);
-        if (item is null) return NotFound();
+        var item = await _svc.GetAllAsync();
         return Ok(item);
     }
 
     [HttpPost("sync")]
-    public async Task<IActionResult> Sync(int league, int season, DateOnly? from, DateOnly? to)
+    public async Task<IActionResult> Sync([FromQuery] string season, [FromQuery] string? date)
     {
         try
         {
-            await _svc.SyncFixturesRangeAsync(league, season, from ?? null, to ?? null);
+            await _svc.SyncRacesByDateAsync(season, date);
             return Accepted();
         }
         catch (InvalidOperationException ioe)

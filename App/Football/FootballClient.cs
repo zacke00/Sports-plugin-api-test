@@ -23,7 +23,7 @@ public class FootballClient
         _http.DefaultRequestHeaders.Add("x-apisports-key", _options.Value.ApiKey);
     }
 
-    public async Task<ExternalFixturesResponse?> GetFixturesByRangeAsync(int league, string season, string? from, string? to)
+    public async Task<ExternalFixturesResponse?> GetFixturesByRangeAsync(int league, int season, DateOnly? from, DateOnly? to)
     {
         if (string.IsNullOrWhiteSpace(_options.Value.ApiKey))
         {
@@ -32,8 +32,11 @@ public class FootballClient
 
         var url = $"fixtures?league={league}&season={season}";
 
-        if (!string.IsNullOrWhiteSpace(from)) url += $"&from={from}";
-        if (!string.IsNullOrWhiteSpace(to)) url += $"&to={to}";
+        if (from is not null)
+            url += $"&from={from:yyyy-MM-dd}";
+
+        if (to is not null)
+            url += $"&to={to:yyyy-MM-dd}";
 
         HttpRequestMessage requestMessage = new(HttpMethod.Get, url);
         requestMessage.Headers.Add("Accept", "application/json");
@@ -48,28 +51,57 @@ public class FootballClient
             throw new HttpRequestException($"ApiSports returned {(int)response.StatusCode} {response.ReasonPhrase}: {snippet}");
         }
 
-        var data = await response.Content.ReadFromJsonAsync<ExternalFixturesResponse>(_jsonSerializer);
+        var raw = await response.Content.ReadAsStringAsync();
+
+        var data = JsonSerializer.Deserialize<ExternalFixturesResponse>(raw, _jsonSerializer);
         return data;
     }
 }
 
-public record ExternalFixturesResponse(
-    string? Get,
-    Dictionary<string, string>? Parameters,
-    int Results,
-    List<ExternalFixtureItem>? Response,
-    JsonElement? Errors
-);
+public class ExternalFixturesResponse
+{
+    public string? Get { get; init; }
+    public Dictionary<string, string>? Parameters { get; init; }
+    public int Results { get; init; }
+    public List<ExternalFixtureItem>? Response { get; init; }
+    public JsonElement? Errors { get; init; }
+}
 
-public record ExternalFixtureItem(
-    ExternalFixtureDetail? Fixture,
-    ExternalLeague? League,
-    ExternalTeams? Teams,
-    ExternalGoals? Goals
-);
+public class ExternalFixtureItem
+{
+    public ExternalFixtureDetail? Fixture { get; init; }
+    public ExternalLeague? League { get; init; }
+    public ExternalTeams? Teams { get; init; }
+    public ExternalGoals? Goals { get; init; }
+}
 
-public record ExternalFixtureDetail(long Id, string? Date);
-public record ExternalLeague(int Id, string? Name);
-public record ExternalTeams(ExternalTeam? Home, ExternalTeam? Away);
-public record ExternalTeam(int Id, string? Name, string? Logo);
-public record ExternalGoals(int? Home, int? Away);
+public class ExternalFixtureDetail
+{
+    public long Id { get; init; }
+    public string? Date { get; init; }
+}
+
+public class ExternalLeague
+{
+    public int Id { get; init; }
+    public string? Name { get; init; }
+}
+
+public class ExternalTeams
+{
+    public ExternalTeam? Home { get; init; }
+    public ExternalTeam? Away { get; init; }
+}
+
+public class ExternalTeam
+{
+    public int Id { get; init; }
+    public string? Name { get; init; }
+    public string? Logo { get; init; }
+}
+
+public class ExternalGoals
+{
+    public int? Home { get; init; }
+    public int? Away { get; init; }
+}

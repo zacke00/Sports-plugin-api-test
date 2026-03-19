@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace Sport.App.Football;
+namespace Sport.App.Handball;
 
 [ApiController]
 [Route("api/[controller]")]
-public class FootballController : ControllerBase
+public class HandballController(IHandballService svc) : ControllerBase
 {
-    private readonly IFootballService _svc;
-    public FootballController(IFootballService svc) => _svc = svc;
+    private readonly IHandballService _svc = svc;
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -16,20 +15,12 @@ public class FootballController : ControllerBase
         return Ok(items);
     }
 
-    [HttpGet("{id:long}")]
-    public async Task<IActionResult> Get(long id)
-    {
-        var item = await _svc.GetByIdAsync((ulong)id);
-        if (item is null) return NotFound();
-        return Ok(item);
-    }
-
     [HttpPost("sync")]
-    public async Task<IActionResult> Sync(int league, int season, DateOnly? from, DateOnly? to)
+    public async Task<IActionResult> Sync(string? date)
     {
         try
         {
-            await _svc.SyncFixturesRangeAsync(league, season, from ?? null, to ?? null);
+            await _svc.SyncGamesByDateAsync(date ?? string.Empty);
             return Accepted();
         }
         catch (InvalidOperationException ioe)
