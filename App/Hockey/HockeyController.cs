@@ -17,12 +17,20 @@ public class HockeyController : ControllerBase
         return Ok(items);
     }
 
+    [HttpGet("{id:long}")]
+    public async Task<IActionResult> Get(long id)
+    {
+        var item = await _svc.GetByIdAsync((ulong)id);
+        if (item is null) return NotFound();
+        return Ok(item);
+    }
+
     [HttpPost("sync")]
-    public async Task<IActionResult> Sync(int league, int season)
+    public async Task<IActionResult> Sync(int league, int season, DateOnly? from, DateOnly? to)
     {
         try
         {
-            await _svc.SyncGamesAsync(league, season);
+            await _svc.SyncFixturesRangeAsync(league, season, from ?? null, to ?? null);
             return Accepted();
         }
         catch (InvalidOperationException ioe)

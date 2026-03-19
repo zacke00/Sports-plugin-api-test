@@ -22,7 +22,7 @@ public class FormulaOneClient
         _http.DefaultRequestHeaders.Add("x-apisports-key", _options.Value.ApiKey);
     }
 
-    public async Task<FormulaOneRacesResponse?> GetRacesByRangeAsync(string grandPrixName, string season, string? date)
+    public async Task<FormulaOneRacesResponse?> GetRacesByRangeAsync( int season, DateOnly? from, DateOnly? to)
     {
         if (string.IsNullOrWhiteSpace(_options.Value.ApiKey))
         {
@@ -30,8 +30,12 @@ public class FormulaOneClient
         }
 
         var url = $"races?season={season}";
-        if (!string.IsNullOrWhiteSpace(grandPrixName)) url += $"&granPrixName={grandPrixName}";
-        if (!string.IsNullOrWhiteSpace(date)) url += $"&date={date}";
+
+        if (from is not null)
+            url += $"&from={from:yyyy-MM-dd}";
+
+        if (to is not null)
+            url += $"&to={to:yyyy-MM-dd}";
 
         HttpRequestMessage requestMessage = new(HttpMethod.Get, url);
         requestMessage.Headers.Add("Accept", "application/json");

@@ -24,17 +24,23 @@ public class HockeyClient
 
     }
 
-    public async Task<HockeyGamesResponse?> GetGamesAsync(int league, int season)
+    public async Task<HockeyGamesResponse?> GetGamesAsync(int league, int season, DateOnly? from, DateOnly? to)
     {
         if (string.IsNullOrWhiteSpace(_options.Value.ApiKey))
         {
-            throw new InvalidOperationException("ApiSports API key is not configured. Set 'Hockey:ApiKey' in environmentm user-secrets or .env ");
+            throw new InvalidOperationException("ApiSports API key is not configured. Set 'Hockey:ApiKey' in environment, user-secrets or .env.");
         }
 
         var url = $"games?league={league}&season={season}";
 
+        if (from is not null)
+            url += $"&from={from:yyyy-MM-dd}";
+
+        if (to is not null)
+            url += $"&to={to:yyyy-MM-dd}";
+
         HttpRequestMessage requestMessage = new(HttpMethod.Get, url);
-        requestMessage.Headers.Add("accept", "application/json");
+        requestMessage.Headers.Add("Accept", "application/json");
 
         var response = await _http.SendAsync(requestMessage);
 
@@ -44,7 +50,7 @@ public class HockeyClient
             var snippet = content?.Length > 500 ? content[..500] + "..." : content;
             throw new HttpRequestException($"Hockey Api Returned {(int) response.StatusCode} {response.ReasonPhrase}: {snippet} ");
         }
-        
+
         var result = await response.Content.ReadFromJsonAsync<HockeyGamesResponse>(_jsonSerializer);
         return result;
     }

@@ -26,7 +26,7 @@ public class HockeyClientTest
     [Fact]
     public async Task GetGamesAsync()
     {
-        var result = await _client.GetGamesAsync(81, 2024);
+        var result = await _client.GetGamesAsync(81, 2024, null, null);
         Assert.NotNull(result);
         Assert.NotEmpty(result.Response);
     }

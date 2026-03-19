@@ -7,7 +7,8 @@ namespace Sport.App.FormulaOne;
 public interface IFormulaOneService
 {
     Task<IEnumerable<fixture>> GetAllAsync();
-    Task SyncRacesByDateAsync(string season, string? date);
+    Task<fixture?> GetByIdAsync(ulong id);
+    Task SyncFixturesRangeAsync(int season, DateOnly? from, DateOnly? to);
 }
 
 public class FormulaOneService : IFormulaOneService
@@ -29,24 +30,42 @@ public class FormulaOneService : IFormulaOneService
             .ToListAsync();
     }
 
-    public async Task SyncRacesByDateAsync(string season, string? date)
+    public async Task<fixture?> GetByIdAsync(ulong id)
     {
-        if (string.IsNullOrWhiteSpace(season))
-            throw new InvalidOperationException("season is required");
+        return await _db.fixtures.AsNoTracking().FirstOrDefaultAsync(f => f.id == id && f.sport_type == "formula-1");
+    }
 
-        var external = await _client.GetRacesByRangeAsync(string.Empty, season, date);
+    public async Task SyncFixturesRangeAsync( int season, DateOnly? from, DateOnly? to)
+    {
+        // Delete existing fixtures in the date range only if a range is provided.
+        if (from is not null && to is not null)
+        {
+            var parsedFrom = from.Value.ToDateTime(TimeOnly.MinValue);
+            var parsedTo = to.Value.ToDateTime(TimeOnly.MinValue);
+
+            var toDelete = await _db.fixtures.Where(f => f.starts_at >= parsedFrom && f.starts_at <= parsedTo && f.sport_type == "formula-1").ToListAsync();
+            if (toDelete.Any())
+            {
+                _db.fixtures.RemoveRange(toDelete);
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        // Fetch from external API
+        var external = await _client.GetRacesByRangeAsync(season, from, to);
         if (external?.Response == null || external.Response.Count == 0)
         {
-            Console.WriteLine($"No fixtures found for {season} on {date}");
             return;
         }
 
         foreach (var r in external.Response)
         {
+            var providerFixtureId = r.Id.ToString();
+
             var model = new fixture
             {
                 provider = "api-sports-formula1",
-                provider_fixture_id = r.Id.ToString(),
+                provider_fixture_id = providerFixtureId,
                 sport_type = "formula-1",
                 race_name = r.Competition?.Name,
                 starts_at = DateTimeOffset.Parse(r.Date!).UtcDateTime,
@@ -54,7 +73,10 @@ public class FormulaOneService : IFormulaOneService
                 updated_at = DateTime.UtcNow
             };
 
-            var exists = await _db.fixtures.FindAsync(model.id);
+            // Upsert: if exists, update; else add
+            var exists = await _db.fixtures.FirstOrDefaultAsync(f =>
+                f.provider == "api-sports-formula1" &&
+                f.provider_fixture_id == providerFixtureId);
             if (exists != null)
             {
                 _db.Entry(exists).CurrentValues.SetValues(model);

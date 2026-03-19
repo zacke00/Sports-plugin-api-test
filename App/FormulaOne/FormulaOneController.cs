@@ -16,12 +16,20 @@ public class FormulaOneController : ControllerBase
         return Ok(item);
     }
 
+    [HttpGet("{id:long}")]
+    public async Task<IActionResult> Get(long id)
+    {
+        var item = await _svc.GetByIdAsync((ulong)id);
+        if (item is null) return NotFound();
+        return Ok(item);
+    }
+
     [HttpPost("sync")]
-    public async Task<IActionResult> Sync([FromQuery] string season, [FromQuery] string? date)
+    public async Task<IActionResult> Sync(int season, DateOnly? from, DateOnly? to)
     {
         try
         {
-            await _svc.SyncRacesByDateAsync(season, date);
+            await _svc.SyncFixturesRangeAsync(season, from ?? null, to ?? null);
             return Accepted();
         }
         catch (InvalidOperationException ioe)
