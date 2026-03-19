@@ -3,6 +3,7 @@ using Sport.App.Data;
 using Sport.App.Football;
 using Sport.App.FormulaOne;
 using Sport.App.Handball;
+using Sport.App.Hockey;
 using Sport.App.Venues;
 using Sport.App.VenueFixture;
 

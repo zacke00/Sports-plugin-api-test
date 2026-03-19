@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace Sport.App.VenueFixture;
 
 public static class FixtureListExtensions

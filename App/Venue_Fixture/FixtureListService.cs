@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using Sport.App.Data;
 using Sport.App.Models.Scaffolded;
 
@@ -12,14 +13,34 @@ public record VenueFixtureDto(
 
 public interface IFixtureListService
 {
+    Task<IEnumerable<VenueFixtureDto>> GetAllAsync(CancellationToken token = default);
     Task<IEnumerable<VenueFixtureDto>> GetByVenueAsync(ulong venueId);
     Task AddAsync(ulong venueId, ulong fixtureId);
     Task DeleteAsync(ulong venueId, ulong fixtureId);
 }
 
-public class FixtureListService(SportsVenuesScaffoldContext db) : IFixtureListService
+public class FixtureListService(SportsVenuesScaffoldContext db, HybridCache cache) : IFixtureListService
 {
     private readonly SportsVenuesScaffoldContext _db = db;
+
+    private readonly HybridCache _cache = cache;
+
+    public async Task<IEnumerable<VenueFixtureDto>> GetAllAsync(CancellationToken token = default)
+    {
+        return await _cache.GetOrCreateAsync(
+            "venue-fixtures-all",
+            async cancel => await _db.venue_fixtures
+                .Select(vf => new VenueFixtureDto(vf.Venue_id, vf.Fixture_id, vf.Created_at))
+                .AsNoTracking()
+                .ToListAsync(cancel),
+            new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(5),
+                LocalCacheExpiration = TimeSpan.FromMinutes(1)
+            },
+            cancellationToken: token
+        );
+    }
 
     public async Task<IEnumerable<VenueFixtureDto>> GetByVenueAsync(ulong venueId)
     {

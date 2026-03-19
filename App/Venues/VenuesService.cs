@@ -23,7 +23,7 @@ public class VenuesService : IVenuesService
 
     public async Task<IEnumerable<Venue>> GetAllAsync()
     {
-        return await _db.venues.ToListAsync();
+        return await _db.venues.AsNoTracking().ToListAsync();
     }
 
     public async Task CreateOrUpdateVenueAsync(string name, string location, string address, string phone)
@@ -47,7 +47,8 @@ public class VenuesService : IVenuesService
                 Location = location,
                 Address = address,
                 Phone = phone,
-                Created_at = DateTime.UtcNow
+                Created_at = DateTime.UtcNow,
+                Updated_at = DateTime.UtcNow
             };
 
             await _db.venues.AddAsync(newVenue);

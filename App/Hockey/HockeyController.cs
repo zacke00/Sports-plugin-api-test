@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Mvc;
 
 namespace Sport.App.Hockey;
@@ -30,7 +29,7 @@ public class HockeyController : ControllerBase
     {
         try
         {
-            await _svc.SyncFixturesRangeAsync(league, season, from ?? null, to ?? null);
+            await _svc.SyncFixturesRangeAsync(league, season, from, to);
             return Accepted();
         }
         catch (InvalidOperationException ioe)

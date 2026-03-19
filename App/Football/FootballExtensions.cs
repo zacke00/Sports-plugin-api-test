@@ -1,5 +1,3 @@
-
-
 namespace Sport.App.Football;
 
 public static class FootballExtensions

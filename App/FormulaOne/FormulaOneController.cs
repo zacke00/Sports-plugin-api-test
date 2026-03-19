@@ -12,8 +12,8 @@ public class FormulaOneController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var item = await _svc.GetAllAsync();
-        return Ok(item);
+        var items = await _svc.GetAllAsync();
+        return Ok(items);
     }
 
     [HttpGet("{id:long}")]
@@ -29,7 +29,7 @@ public class FormulaOneController : ControllerBase
     {
         try
         {
-            await _svc.SyncFixturesRangeAsync(season, from ?? null, to ?? null);
+            await _svc.SyncFixturesRangeAsync(season, from, to);
             return Accepted();
         }
         catch (InvalidOperationException ioe)

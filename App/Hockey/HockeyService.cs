@@ -60,7 +60,7 @@ public class HockeyService(HybridCache cache, SportsVenuesScaffoldContext db, Ho
             var parsedTo = to.Value.ToDateTime(TimeOnly.MinValue);
 
             var toDelete = await _db.fixtures.Where(f => f.Starts_at >= parsedFrom && f.Starts_at <= parsedTo && f.Sport_type == "hockey").ToListAsync();
-            if (toDelete.Any())
+            if (toDelete.Count != 0)
             {
                 _db.fixtures.RemoveRange(toDelete);
                 await _db.SaveChangesAsync();

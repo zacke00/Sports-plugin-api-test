@@ -20,7 +20,6 @@ public class HandballClient
 
         _http.BaseAddress = _options.Value.BaseUrl;
         _http.DefaultRequestHeaders.Add("x-apisports-key", _options.Value.ApiKey);
-
     }
 
     public async Task<HandballGamesResponse?> GetGamesByDateAsync(DateOnly date)
@@ -41,7 +40,7 @@ public class HandballClient
         {
             var content = await response.Content.ReadAsStringAsync();
             var snippet = content?.Length > 500 ? content[..500] + "..." : content;
-            throw new HttpRequestException($"Hockey Api Returned {(int) response.StatusCode} {response.ReasonPhrase}: {snippet} ");
+            throw new HttpRequestException($"Handball API returned {(int)response.StatusCode} {response.ReasonPhrase}: {snippet}");
         }
         
         var result = await response.Content.ReadFromJsonAsync<HandballGamesResponse>(_jsonSerializer);

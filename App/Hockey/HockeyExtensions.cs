@@ -1,5 +1,4 @@
-
-using Sport.App.Hockey;
+namespace Sport.App.Hockey;
 
 public static class HockeyExtensions
 {

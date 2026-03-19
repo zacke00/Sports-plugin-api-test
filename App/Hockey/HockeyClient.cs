@@ -1,4 +1,3 @@
-
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 
@@ -21,7 +20,6 @@ public class HockeyClient
 
         _http.BaseAddress = _options.Value.BaseUrl;
         _http.DefaultRequestHeaders.Add("x-apisports-key", _options.Value.ApiKey);
-
     }
 
     public async Task<HockeyGamesResponse?> GetGamesAsync(int league, int season, DateOnly? from, DateOnly? to)
@@ -44,11 +42,11 @@ public class HockeyClient
 
         var response = await _http.SendAsync(requestMessage);
 
-        if(!response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync();
             var snippet = content?.Length > 500 ? content[..500] + "..." : content;
-            throw new HttpRequestException($"Hockey Api Returned {(int) response.StatusCode} {response.ReasonPhrase}: {snippet} ");
+            throw new HttpRequestException($"Hockey API returned {(int)response.StatusCode} {response.ReasonPhrase}: {snippet}");
         }
 
         var result = await response.Content.ReadFromJsonAsync<HockeyGamesResponse>(_jsonSerializer);
@@ -77,6 +75,6 @@ public record HockeyGameItem(
 );
 
 public record HockeyLeague(int Id, string? Name, string? Type, string? Logo, int Season);
-public record HockeyTeams(HockeyTeam? Home, HockeyTeam Away);
+public record HockeyTeams(HockeyTeam? Home, HockeyTeam? Away);
 public record HockeyTeam(int Id, string? Name, string? Logo);
 public record HockeyScores(int? Home, int? Away);

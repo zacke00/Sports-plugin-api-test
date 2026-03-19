@@ -29,7 +29,7 @@ public class FootballController : ControllerBase
     {
         try
         {
-            await _svc.SyncFixturesRangeAsync(league, season, from ?? null, to ?? null);
+            await _svc.SyncFixturesRangeAsync(league, season, from, to);
             return Accepted();
         }
         catch (InvalidOperationException ioe)

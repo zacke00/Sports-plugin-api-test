@@ -37,7 +37,7 @@ public class VenuesController : ControllerBase
 
         if (existing != null)
         {
-            if (!string.IsNullOrWhiteSpace(name)) existing.Name = name.Trim();
+            existing.Name = normalizedName;
             existing.Location = location ?? existing.Location;
             existing.Address = address ?? existing.Address;
             existing.Phone = phone ?? existing.Phone;

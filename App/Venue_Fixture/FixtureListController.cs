@@ -7,6 +7,13 @@ namespace Sport.App.VenueFixture;
 public class FixtureListController(IFixtureListService svc) : ControllerBase
 {
     private readonly IFixtureListService _svc = svc;
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var results = await _svc.GetAllAsync();
+        return Ok(results);
+    }
     
     [HttpGet("{venueId:long}")]
     public async Task<IActionResult> GetByVenue(ulong venueId)
@@ -21,7 +28,7 @@ public class FixtureListController(IFixtureListService svc) : ControllerBase
         try
         {
             await _svc.AddAsync(venueId, fixtureId);
-            return Created(string.Empty, new { venueId,fixtureId });
+            return Created(string.Empty, new { venueId, fixtureId });
         }
         catch (KeyNotFoundException knfe)
         {
@@ -49,5 +56,3 @@ public class FixtureListController(IFixtureListService svc) : ControllerBase
         }
     }
 }
-
-

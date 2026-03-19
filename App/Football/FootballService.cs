@@ -60,7 +60,7 @@ public class FootballService(HybridCache cache, SportsVenuesScaffoldContext db, 
             var parsedTo = to.Value.ToDateTime(TimeOnly.MinValue);
 
             var toDelete = await _db.fixtures.Where(f => f.Starts_at >= parsedFrom && f.Starts_at <= parsedTo && f.Sport_type == "football").ToListAsync();
-            if (toDelete.Any())
+            if (toDelete.Count != 0)
             {
                 _db.fixtures.RemoveRange(toDelete);
                 await _db.SaveChangesAsync();
@@ -74,6 +74,8 @@ public class FootballService(HybridCache cache, SportsVenuesScaffoldContext db, 
         foreach (var item in external.Response)
         {
             var fx = item.Fixture;
+            if (fx?.Date is null) continue;
+
             var teams = item.Teams;
             var goals = item.Goals;
 
@@ -85,7 +87,7 @@ public class FootballService(HybridCache cache, SportsVenuesScaffoldContext db, 
                 Provider_fixture_id = providerFixtureId,
                 Sport_type = "football",
                 League_name = item.League?.Name,
-                Starts_at = DateTime.Parse(fx.Date!).ToUniversalTime(),
+                Starts_at = DateTime.Parse(fx.Date).ToUniversalTime(),
                 Home_team_name = teams?.Home?.Name,
                 Away_team_name = teams?.Away?.Name,
                 Home_score = goals?.Home,

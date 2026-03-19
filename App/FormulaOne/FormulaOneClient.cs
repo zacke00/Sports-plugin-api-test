@@ -22,7 +22,7 @@ public class FormulaOneClient
         _http.DefaultRequestHeaders.Add("x-apisports-key", _options.Value.ApiKey);
     }
 
-    public async Task<FormulaOneRacesResponse?> GetRacesByRangeAsync( int season, DateOnly? from, DateOnly? to)
+    public async Task<FormulaOneRacesResponse?> GetRacesByRangeAsync(int season, DateOnly? from, DateOnly? to)
     {
         if (string.IsNullOrWhiteSpace(_options.Value.ApiKey))
         {
