@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Sport.App.Models.Scaffolded;
+using Sport.App.Data.Entities;
 
 namespace Sport.App.Venues;
 

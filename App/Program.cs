@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Sport.App.Data;
+using Sport.App.Data.Services;
 using Sport.App.Football;
 using Sport.App.FormulaOne;
 using Sport.App.Handball;
@@ -18,9 +19,17 @@ builder.Services.AddSwaggerGen();
 var connectionString = builder.Configuration.GetConnectionString("SportsVenues")
                        ?? "Server=127.0.0.1;Port=3306;Database=sports_venues;User=root;Password=;";
 
-// Register the scaffolded DbContext so EF model matches the live database
-builder.Services.AddDbContext<SportsVenuesScaffoldContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+// Register the code-first DbContext
+builder.Services.AddDbContext<SportsVenuesContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mysql =>
+    {
+        mysql.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorNumbersToAdd: null);
+        mysql.CommandTimeout(30);
+    })
+    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
 // register feature modules
 builder.Services.AddFootball();
@@ -30,8 +39,17 @@ builder.Services.AddVenues();
 builder.Services.AddHockey();
 builder.Services.AddVenueFixture();
 builder.Services.AddHybridCache();
+builder.Services.AddHostedService<IndexOptimizationService>();
+builder.Services.AddHostedService<FixtureSyncService>();
 
 var app = builder.Build();
+
+// Apply pending EF Core migrations at startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SportsVenuesContext>();
+    await db.Database.MigrateAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

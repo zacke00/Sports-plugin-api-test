@@ -6,14 +6,14 @@ namespace Sport.App.Fixtures;
 
 [ApiController]
 [Route("api/[controller]")]
-public class FixturesController(SportsVenuesScaffoldContext db) : ControllerBase
+public class FixturesController(SportsVenuesContext db) : ControllerBase
 {
-    private readonly SportsVenuesScaffoldContext _db = db;
+    private readonly SportsVenuesContext _db = db;
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var fixtures = await _db.venue_fixtures
+        var fixtures = await _db.Fixtures
             .AsNoTracking()
             .ToListAsync();
 
@@ -23,9 +23,9 @@ public class FixturesController(SportsVenuesScaffoldContext db) : ControllerBase
     [HttpGet("{id:long}")]
     public async Task<IActionResult> GetById(ulong id)
     {
-        var fixture = await _db.fixtures
+        var fixture = await _db.Fixtures
             .AsNoTracking()
-            .FirstOrDefaultAsync(f => f.id == id);
+            .FirstOrDefaultAsync(f => f.Id == id);
 
         if (fixture is null)
             return NotFound(new { error = $"Fixture {id} not found." });

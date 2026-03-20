@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Sport.App.Data;
-using Sport.App.Models.Scaffolded;
+using Sport.App.Data.Entities;
 
 namespace Sport.App.Football;
 
@@ -12,18 +12,18 @@ public interface IFootballService
     Task SyncFixturesRangeAsync(int league, int season, DateOnly? from, DateOnly? to);
 }
 
-public class FootballService(HybridCache cache, SportsVenuesScaffoldContext db, FootballClient client) : IFootballService
+public class FootballService(HybridCache cache, SportsVenuesContext db, FootballClient client) : IFootballService
 {
     private readonly HybridCache _cache = cache;
-    private readonly SportsVenuesScaffoldContext _db = db;
+    private readonly SportsVenuesContext _db = db;
     private readonly FootballClient _client = client;
 
     public async Task<IEnumerable<Fixture>> GetAllAsync(CancellationToken token = default)
     {
         return await _cache.GetOrCreateAsync(
             "football-fixtures-all",
-            async cancel => await _db.fixtures
-                .Where(f => f.Sport_type == "football")
+            async cancel => await _db.Fixtures
+                .Where(f => f.SportType == "football")
                 .AsNoTracking()
                 .ToListAsync(cancel),
             new HybridCacheEntryOptions
@@ -39,9 +39,9 @@ public class FootballService(HybridCache cache, SportsVenuesScaffoldContext db, 
     {
         return await _cache.GetOrCreateAsync(
             $"football-fixture-{id}",
-            async cancel => await _db.fixtures
+            async cancel => await _db.Fixtures
                 .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.id == id && f.Sport_type == "football", cancel),
+                .FirstOrDefaultAsync(f => f.Id == id && f.SportType == "football", cancel),
             new HybridCacheEntryOptions
             {
                 Expiration = TimeSpan.FromMinutes(5),
@@ -59,10 +59,10 @@ public class FootballService(HybridCache cache, SportsVenuesScaffoldContext db, 
             var parsedFrom = from.Value.ToDateTime(TimeOnly.MinValue);
             var parsedTo = to.Value.ToDateTime(TimeOnly.MinValue);
 
-            var toDelete = await _db.fixtures.Where(f => f.Starts_at >= parsedFrom && f.Starts_at <= parsedTo && f.Sport_type == "football").ToListAsync();
+            var toDelete = await _db.Fixtures.Where(f => f.StartsAt >= parsedFrom && f.StartsAt <= parsedTo && f.SportType == "football").ToListAsync();
             if (toDelete.Count != 0)
             {
-                _db.fixtures.RemoveRange(toDelete);
+                _db.Fixtures.RemoveRange(toDelete);
                 await _db.SaveChangesAsync();
             }
         }
@@ -84,29 +84,32 @@ public class FootballService(HybridCache cache, SportsVenuesScaffoldContext db, 
             var model = new Fixture
             {
                 Provider = "api-sports",
-                Provider_fixture_id = providerFixtureId,
-                Sport_type = "football",
-                League_name = item.League?.Name,
-                Starts_at = DateTime.Parse(fx.Date).ToUniversalTime(),
-                Home_team_name = teams?.Home?.Name,
-                Away_team_name = teams?.Away?.Name,
-                Home_score = goals?.Home,
-                Away_score = goals?.Away,
-                Created_at = DateTime.UtcNow,
-                Updated_at = DateTime.UtcNow
+                ProviderFixtureId = providerFixtureId,
+                SportType = "football",
+                LeagueName = item.League?.Name,
+                StartsAt = DateTime.Parse(fx.Date).ToUniversalTime(),
+                HomeTeamName = teams?.Home?.Name,
+                AwayTeamName = teams?.Away?.Name,
+                HomeScore = goals?.Home,
+                AwayScore = goals?.Away,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
             // Upsert: if exists, update; else add
-            var exists = await _db.fixtures.FirstOrDefaultAsync(f =>
+            var exists = await _db.Fixtures
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(f =>
                 f.Provider == "api-sports" &&
-                f.Provider_fixture_id == providerFixtureId);
+                f.ProviderFixtureId == providerFixtureId);
             if (exists != null)
             {
+                exists.DeletedAt = null; // Restore if previously soft-deleted
                 _db.Entry(exists).CurrentValues.SetValues(model);
             }
             else
             {
-                await _db.fixtures.AddAsync(model);
+                await _db.Fixtures.AddAsync(model);
             }
         }
 

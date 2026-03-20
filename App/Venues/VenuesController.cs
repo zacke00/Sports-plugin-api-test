@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sport.App.Data;
-using Sport.App.Models.Scaffolded;
+using Sport.App.Data.Entities;
 
 namespace Sport.App.Venues;
 
@@ -9,18 +9,18 @@ namespace Sport.App.Venues;
 [Route("api/[controller]")]
 public class VenuesController : ControllerBase
 {
-    private readonly SportsVenuesScaffoldContext _db;
+    private readonly SportsVenuesContext _db;
 
-    public VenuesController(SportsVenuesScaffoldContext db) => _db = db;
+    public VenuesController(SportsVenuesContext db) => _db = db;
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
-        => Ok(await _db.venues.AsNoTracking().ToListAsync());
+        => Ok(await _db.Venues.AsNoTracking().ToListAsync());
 
     [HttpGet("{id:long}")]
     public async Task<IActionResult> Get(ulong id)
     {
-        var v = await _db.venues.FindAsync(id);
+        var v = await _db.Venues.FindAsync(id);
         return v == null ? NotFound() : Ok(v);
     }
 
@@ -32,7 +32,7 @@ public class VenuesController : ControllerBase
 
         var normalizedName = name.Trim();
 
-        var existing = await _db.venues
+        var existing = await _db.Venues
             .FirstOrDefaultAsync(v => v.Name == normalizedName);
 
         if (existing != null)
@@ -41,7 +41,7 @@ public class VenuesController : ControllerBase
             existing.Location = location ?? existing.Location;
             existing.Address = address ?? existing.Address;
             existing.Phone = phone ?? existing.Phone;
-            existing.Updated_at = DateTime.UtcNow;
+            existing.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
             return Ok(existing);
@@ -54,11 +54,11 @@ public class VenuesController : ControllerBase
                 Location = location,
                 Address = address,
                 Phone = phone,
-                Created_at = DateTime.UtcNow,
-                Updated_at = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
-            await _db.venues.AddAsync(v);
+            await _db.Venues.AddAsync(v);
             await _db.SaveChangesAsync();
 
             return CreatedAtAction(nameof(Get), new { id = v.Id }, v);
@@ -68,14 +68,14 @@ public class VenuesController : ControllerBase
     [HttpPut("{id:long}")]
     public async Task<IActionResult> Update(ulong id, Venue input)
     {
-        var v = await _db.venues.FindAsync(id);
+        var v = await _db.Venues.FindAsync(id);
         if (v == null) return NotFound();
 
         if (!string.IsNullOrWhiteSpace(input?.Name)) v.Name = input.Name;
         v.Location = input?.Location ?? v.Location;
         v.Address = input?.Address ?? v.Address;
         v.Phone = input?.Phone ?? v.Phone;
-        v.Updated_at = DateTime.UtcNow;
+        v.UpdatedAt = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
         return Ok(v);
@@ -84,9 +84,9 @@ public class VenuesController : ControllerBase
     [HttpDelete("{id:long}")]
     public async Task<IActionResult> Delete(ulong id)
     {
-        var v = await _db.venues.FindAsync(id);
+        var v = await _db.Venues.FindAsync(id);
         if (v == null) return NotFound();
-        _db.venues.Remove(v);
+        _db.Venues.Remove(v);
         await _db.SaveChangesAsync();
         return NoContent();
     }

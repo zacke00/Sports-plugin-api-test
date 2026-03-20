@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Sport.App.Data;
-using Sport.App.Models.Scaffolded;
+using VenueFixtureEntity = Sport.App.Data.Entities.VenueFixture;
 
 namespace Sport.App.VenueFixture;
 
@@ -19,9 +19,9 @@ public interface IFixtureListService
     Task DeleteAsync(ulong venueId, ulong fixtureId);
 }
 
-public class FixtureListService(SportsVenuesScaffoldContext db, HybridCache cache) : IFixtureListService
+public class FixtureListService(SportsVenuesContext db, HybridCache cache) : IFixtureListService
 {
-    private readonly SportsVenuesScaffoldContext _db = db;
+    private readonly SportsVenuesContext _db = db;
 
     private readonly HybridCache _cache = cache;
 
@@ -29,8 +29,8 @@ public class FixtureListService(SportsVenuesScaffoldContext db, HybridCache cach
     {
         return await _cache.GetOrCreateAsync(
             "venue-fixtures-all",
-            async cancel => await _db.venue_fixtures
-                .Select(vf => new VenueFixtureDto(vf.Venue_id, vf.Fixture_id, vf.Created_at))
+            async cancel => await _db.VenueFixtures
+                .Select(vf => new VenueFixtureDto(vf.VenueId, vf.FixtureId, vf.CreatedAt))
                 .AsNoTracking()
                 .ToListAsync(cancel),
             new HybridCacheEntryOptions
@@ -44,48 +44,48 @@ public class FixtureListService(SportsVenuesScaffoldContext db, HybridCache cach
 
     public async Task<IEnumerable<VenueFixtureDto>> GetByVenueAsync(ulong venueId)
     {
-        return await _db.venue_fixtures
-            .Where(vf => vf.Venue_id == venueId)
-            .Select(vf => new VenueFixtureDto(vf.Venue_id, vf.Fixture_id, vf.Created_at))
+        return await _db.VenueFixtures
+            .Where(vf => vf.VenueId == venueId)
+            .Select(vf => new VenueFixtureDto(vf.VenueId, vf.FixtureId, vf.CreatedAt))
             .AsNoTracking()
             .ToListAsync();
     }
 
     public async Task AddAsync(ulong venueId, ulong fixtureId)
     {
-        var venueExists = await _db.venues.AnyAsync(v => v.Id == venueId);
+        var venueExists = await _db.Venues.AnyAsync(v => v.Id == venueId);
         if (!venueExists)
             throw new KeyNotFoundException($"Venue {venueId} not found.");
 
-        var fixtureExists = await _db.fixtures.AnyAsync(f => f.id == fixtureId);
+        var fixtureExists = await _db.Fixtures.AnyAsync(f => f.Id == fixtureId);
         if (!fixtureExists)
             throw new KeyNotFoundException($"Fixture {fixtureId} not found.");
 
-        var alreadyLinked = await _db.venue_fixtures
-            .AnyAsync(vf => vf.Venue_id == venueId && vf.Fixture_id == fixtureId);
+        var alreadyLinked = await _db.VenueFixtures
+            .AnyAsync(vf => vf.VenueId == venueId && vf.FixtureId == fixtureId);
         if (alreadyLinked)
             throw new InvalidOperationException($"Fixture {fixtureId} is already linked to venue {venueId}.");
 
-        var link = new Venue_fixture
+        var link = new VenueFixtureEntity
         {
-            Venue_id = venueId,
-            Fixture_id = fixtureId,
-            Created_at = DateTime.UtcNow
+            VenueId = venueId,
+            FixtureId = fixtureId,
+            CreatedAt = DateTime.UtcNow
         };
 
-        await _db.venue_fixtures.AddAsync(link);
+        await _db.VenueFixtures.AddAsync(link);
         await _db.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(ulong venueId, ulong fixtureId)
     {
-        var link = await _db.venue_fixtures
-            .FirstOrDefaultAsync(vf => vf.Venue_id == venueId && vf.Fixture_id == fixtureId);
+        var link = await _db.VenueFixtures
+            .FirstOrDefaultAsync(vf => vf.VenueId == venueId && vf.FixtureId == fixtureId);
 
         if (link == null)
             throw new KeyNotFoundException($"No link found between venue {venueId} and fixture {fixtureId}.");
 
-        _db.venue_fixtures.Remove(link);
+        _db.VenueFixtures.Remove(link);
         await _db.SaveChangesAsync();
     }
 }

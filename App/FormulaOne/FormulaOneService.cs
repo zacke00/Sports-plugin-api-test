@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Sport.App.Data;
-using Sport.App.Models.Scaffolded;
+using Sport.App.Data.Entities;
 
 namespace Sport.App.FormulaOne;
 
@@ -12,18 +12,18 @@ public interface IFormulaOneService
     Task SyncFixturesRangeAsync(int season, DateOnly? from, DateOnly? to);
 }
 
-public class FormulaOneService(HybridCache cache, SportsVenuesScaffoldContext db, FormulaOneClient client) : IFormulaOneService
+public class FormulaOneService(HybridCache cache, SportsVenuesContext db, FormulaOneClient client) : IFormulaOneService
 {
     private readonly HybridCache _cache = cache;
-    private readonly SportsVenuesScaffoldContext _db = db;
+    private readonly SportsVenuesContext _db = db;
     private readonly FormulaOneClient _client = client;
 
     public async Task<IEnumerable<Fixture>> GetAllAsync(CancellationToken token = default)
     {
         return await _cache.GetOrCreateAsync(
             "formulaone-fixtures-all",
-            async cancel => await _db.fixtures
-                .Where(f => f.Sport_type == "formula-1")
+            async cancel => await _db.Fixtures
+                .Where(f => f.SportType == "formula-1")
                 .AsNoTracking()
                 .ToListAsync(cancel),
             new HybridCacheEntryOptions
@@ -39,9 +39,9 @@ public class FormulaOneService(HybridCache cache, SportsVenuesScaffoldContext db
     {
         return await _cache.GetOrCreateAsync(
             $"formulaone-fixture-{id}",
-            async cancel => await _db.fixtures
+            async cancel => await _db.Fixtures
                 .AsNoTracking()
-                .FirstOrDefaultAsync(f => f.id == id && f.Sport_type == "formula-1", cancel),
+                .FirstOrDefaultAsync(f => f.Id == id && f.SportType == "formula-1", cancel),
             new HybridCacheEntryOptions
             {
                 Expiration = TimeSpan.FromMinutes(5),
@@ -59,10 +59,10 @@ public class FormulaOneService(HybridCache cache, SportsVenuesScaffoldContext db
             var parsedFrom = from.Value.ToDateTime(TimeOnly.MinValue);
             var parsedTo = to.Value.ToDateTime(TimeOnly.MinValue);
 
-            var toDelete = await _db.fixtures.Where(f => f.Starts_at >= parsedFrom && f.Starts_at <= parsedTo && f.Sport_type == "formula-1").ToListAsync();
+            var toDelete = await _db.Fixtures.Where(f => f.StartsAt >= parsedFrom && f.StartsAt <= parsedTo && f.SportType == "formula-1").ToListAsync();
             if (toDelete.Count != 0)
             {
-                _db.fixtures.RemoveRange(toDelete);
+                _db.Fixtures.RemoveRange(toDelete);
                 await _db.SaveChangesAsync();
             }
         }
@@ -81,25 +81,28 @@ public class FormulaOneService(HybridCache cache, SportsVenuesScaffoldContext db
             var model = new Fixture
             {
                 Provider = "api-sports-formula1",
-                Provider_fixture_id = providerFixtureId,
-                Sport_type = "formula-1",
-                Race_name = r.Competition?.Name,
-                Starts_at = DateTimeOffset.Parse(r.Date!).UtcDateTime,
-                Created_at = DateTime.UtcNow,
-                Updated_at = DateTime.UtcNow
+                ProviderFixtureId = providerFixtureId,
+                SportType = "formula-1",
+                RaceName = r.Competition?.Name,
+                StartsAt = DateTimeOffset.Parse(r.Date!).UtcDateTime,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
             // Upsert: if exists, update; else add
-            var exists = await _db.fixtures.FirstOrDefaultAsync(f =>
+            var exists = await _db.Fixtures
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(f =>
                 f.Provider == "api-sports-formula1" &&
-                f.Provider_fixture_id == providerFixtureId);
+                f.ProviderFixtureId == providerFixtureId);
             if (exists != null)
             {
+                exists.DeletedAt = null; // Restore if previously soft-deleted
                 _db.Entry(exists).CurrentValues.SetValues(model);
             }
             else
             {
-                await _db.fixtures.AddAsync(model);
+                await _db.Fixtures.AddAsync(model);
             }
         }
 

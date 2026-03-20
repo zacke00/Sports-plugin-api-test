@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Sport.App.Data;
-using Sport.App.Models.Scaffolded;
+using Sport.App.Data.Entities;
 
 namespace Sport.App.Venues;
 
@@ -12,10 +12,10 @@ public interface IVenuesService
 
 public class VenuesService : IVenuesService
 {
-    private readonly SportsVenuesScaffoldContext _db;
+    private readonly SportsVenuesContext _db;
     private readonly VenuesClient _client;
 
-    public VenuesService(SportsVenuesScaffoldContext db, VenuesClient client)
+    public VenuesService(SportsVenuesContext db, VenuesClient client)
     {
         _db = db;
         _client = client;
@@ -23,12 +23,12 @@ public class VenuesService : IVenuesService
 
     public async Task<IEnumerable<Venue>> GetAllAsync()
     {
-        return await _db.venues.AsNoTracking().ToListAsync();
+        return await _db.Venues.AsNoTracking().ToListAsync();
     }
 
     public async Task CreateOrUpdateVenueAsync(string name, string location, string address, string phone)
     {
-        var existingVenue = await _db.venues.FirstOrDefaultAsync(v => v.Name == name);
+        var existingVenue = await _db.Venues.FirstOrDefaultAsync(v => v.Name == name);
 
         if (existingVenue != null)
         {
@@ -36,8 +36,8 @@ public class VenuesService : IVenuesService
             existingVenue.Location = location;
             existingVenue.Address = address;
             existingVenue.Phone = phone;
-            existingVenue.Updated_at = DateTime.UtcNow;
-            _db.venues.Update(existingVenue);
+            existingVenue.UpdatedAt = DateTime.UtcNow;
+            _db.Venues.Update(existingVenue);
         }
         else
         {
@@ -47,11 +47,11 @@ public class VenuesService : IVenuesService
                 Location = location,
                 Address = address,
                 Phone = phone,
-                Created_at = DateTime.UtcNow,
-                Updated_at = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
-            await _db.venues.AddAsync(newVenue);
+            await _db.Venues.AddAsync(newVenue);
         }
 
         await _db.SaveChangesAsync();
