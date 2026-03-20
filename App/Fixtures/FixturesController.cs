@@ -10,9 +10,6 @@ public class FixturesController(SportsVenuesScaffoldContext db) : ControllerBase
 {
     private readonly SportsVenuesScaffoldContext _db = db;
 
-    /// <summary>
-    /// Get all fixtures regardless of sport type.
-    /// </summary>
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -23,9 +20,6 @@ public class FixturesController(SportsVenuesScaffoldContext db) : ControllerBase
         return Ok(fixtures);
     }
 
-    /// <summary>
-    /// Get a single fixture by ID regardless of sport type.
-    /// </summary>
     [HttpGet("{id:long}")]
     public async Task<IActionResult> GetById(ulong id)
     {
