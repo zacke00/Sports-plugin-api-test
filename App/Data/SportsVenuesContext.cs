@@ -80,9 +80,17 @@ public class SportsVenuesContext : DbContext
                   .HasColumnName("home_team_name")
                   .HasMaxLength(255);
 
+            entity.Property(e => e.HomeTeamLogo)
+                  .HasColumnName("home_team_logo")
+                  .HasMaxLength(512);
+
             entity.Property(e => e.AwayTeamName)
                   .HasColumnName("away_team_name")
                   .HasMaxLength(255);
+
+            entity.Property(e => e.AwayTeamLogo)
+                  .HasColumnName("away_team_logo")
+                  .HasMaxLength(512);
 
             entity.Property(e => e.RaceName)
                   .HasColumnName("race_name")

@@ -83,7 +83,9 @@ public class HockeyService(HybridCache cache, SportsVenuesContext db, HockeyClie
                 LeagueName = g.League?.Name,
                 StartsAt = DateTimeOffset.Parse(g.Date!).UtcDateTime,
                 HomeTeamName = g.Teams?.Home?.Name,
+                HomeTeamLogo = g.Teams?.Home?.Logo,
                 AwayTeamName = g.Teams?.Away?.Name,
+                AwayTeamLogo = g.Teams?.Away?.Logo,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
             };
